@@ -10,4 +10,7 @@ migrate:
 migrated:
 	migrate -path ./db/migrations -database "postgresql://j2mf:1122@localhost:5432/simple_bank?sslmode=disable" -verbose down
 
+sqlc:
+	sqlc generate
+
 .PHONY: createdb
