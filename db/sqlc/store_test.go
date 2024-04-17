@@ -80,3 +80,46 @@ func TestTransferTx(t *testing.T) {
 		require.Equal(t, account2Balance, toAccount.Balance)
 	}
 }
+
+func TestTransferTxDeadlock(t *testing.T) {
+	store := NewStore(testDB)
+
+	account1 := CreateRandomAccount(t)
+	account2 := CreateRandomAccount(t)
+
+	n := 10
+	amount := int64(10)
+
+	errs := make(chan error)
+
+	for i := 0; i < n; i++ {
+		fromAccountId, toAccountId := account1.ID, account2.ID
+
+		if i%2 == 1 {
+			fromAccountId, toAccountId = account2.ID, account1.ID
+		}
+
+		go func() {
+			_, err := store.TransferTx(context.Background(), TransferTxParams{
+				FromAccountId: fromAccountId,
+				ToAccountId:   toAccountId,
+				Amount:        amount,
+			})
+
+			errs <- err
+		}()
+	}
+
+	for i := 0; i < n; i++ {
+		err := <-errs
+		require.NoError(t, err)
+	}
+
+	updatedAccount1, err := store.GetAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+	require.Equal(t, account1.Balance, updatedAccount1.Balance)
+
+	updatedAccount2, err := store.GetAccount(context.Background(), account2.ID)
+	require.NoError(t, err)
+	require.Equal(t, account2.Balance, updatedAccount2.Balance)
+}
