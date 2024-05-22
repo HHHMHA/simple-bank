@@ -20,4 +20,7 @@ test:
 server:
 	go run main.go
 
-.PHONY: createdb dropdb migrate migrated sqlc test server
+mock:
+	mockgen -destination db/mock/store.go -package mockdb simple-bank/db/sqlc Store
+
+.PHONY: createdb dropdb migrate migrated sqlc test server mock
